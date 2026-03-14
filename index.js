@@ -4,6 +4,7 @@ const {
     fetchLatestBaileysVersion,
     DisconnectReason
 } = require("@whiskeysockets/baileys");
+const QRCode = require("qrcode");
 const chalk = require("chalk");
 const P = require("pino");
 const qrcode = require("qrcode-terminal");
@@ -109,10 +110,11 @@ async function startBot() {
 
         sock.ev.on("connection.update", update => {
             const { connection, lastDisconnect, qr } = update;
-
             if (qr) {
-                console.log("🔑 Scan QR ini di WhatsApp Web:");
-                qrcode.generate(qr, { small: true });
+                QRCode.toDataURL(qr).then(url => {
+                    console.log("Buka ini di browser:");
+                    console.log(url);
+                });
             }
 
             if (connection === "open") {
