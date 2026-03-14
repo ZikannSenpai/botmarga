@@ -9,9 +9,12 @@ const chalk = require("chalk");
 const P = require("pino");
 const qrcode = require("qrcode-terminal");
 const fs = require("fs");
+const express = require("express");
 const path = require("path");
 require("./setting");
 const moment = require("moment-timezone");
+const app = express();
+let qrGlobal = null;
 require("moment/locale/id");
 moment.locale("id");
 let plugins = {};
@@ -111,10 +114,8 @@ async function startBot() {
         sock.ev.on("connection.update", update => {
             const { connection, lastDisconnect, qr } = update;
             if (qr) {
-                QRCode.toDataURL(qr).then(url => {
-                    console.log("Buka ini di browser:");
-                    console.log(url);
-                });
+                qrGlobal = qr;
+                console.log("QR tersedia di /qr");
             }
 
             if (connection === "open") {
@@ -277,6 +278,16 @@ loadPlugins();
 watchPlugins();
 startBot();
 
+app.get("/", (req, res) => {
+    res.send("bot hidup");
+});
+
+app.get("/qr", async (req, res) => {
+    if (!qrGlobal) return res.send("QR belum ada / sudah login");
+
+    const img = await QRCode.toDataURL(qrGlobal);
+    res.send(`<img src="${img}">`);
+});
 // 🛡️ Anti Crash biar bot ga mati di panel
 process.on("uncaughtException", err => {
     console.error("❌ Uncaught Exception:", err);
@@ -301,4 +312,9 @@ process.on("unhandledRejection", (reason, promise) => {
 process.on("SIGINT", () => {
     console.log("🛑 Bot dimatikan dengan aman...");
     process.exit(0);
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log("Web aktif di port", PORT);
 });
